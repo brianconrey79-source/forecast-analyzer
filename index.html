@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deal Forecasting Intelligence | OpenAI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #ededeb;
+    --bg-info: #e6f1fb;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --bg-danger: #fcebeb;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b66;
+    --text-info: #0c447c;
+    --text-success: #27500a;
+    --text-warning: #633806;
+    --text-danger: #791f1f;
+    --border: rgba(26,26,24,0.13);
+    --border-med: rgba(26,26,24,0.25);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2a2a28;
+      --bg-tertiary: #333330;
+      --bg-info: #0c2840;
+      --bg-success: #172404;
+      --bg-warning: #2c1800;
+      --bg-danger: #2c0f0f;
+      --text-primary: #f0ede8;
+      --text-secondary: #999990;
+      --text-info: #85b7eb;
+      --text-success: #c0dd97;
+      --text-warning: #fac775;
+      --text-danger: #f09595;
+      --border: rgba(240,237,232,0.12);
+      --border-med: rgba(240,237,232,0.22);
+    }
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .topbar {
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-title { font-size: 15px; font-weight: 500; }
+  .topbar-sub { font-size: 12px; color: var(--text-secondary); }
+  .topbar-dot { width: 6px; height: 6px; border-radius: 50%; background: #1D9E75; margin-left: auto; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    width: fit-content;
+  }
+  .tab {
+    padding: 7px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    transition: all 0.15s;
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+  .tab.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .tab:hover:not(.active) { color: var(--text-primary); }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .upload-zone {
+    border: 0.5px dashed var(--border-med);
+    border-radius: var(--radius-lg);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--bg-secondary);
+  }
+  .upload-zone:hover, .upload-zone.drag {
+    border-color: #1D9E75;
+    background: var(--bg-primary);
+  }
+  .upload-zone svg { width: 28px; height: 28px; margin-bottom: 10px; stroke: var(--text-secondary); }
+  .upload-label { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .upload-sub { font-size: 12px; color: var(--text-secondary); }
+
+  .pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+  .pill-green { background: var(--bg-success); color: var(--text-success); }
+  .pill-amber { background: var(--bg-warning); color: var(--text-warning); }
+  .pill-red { background: var(--bg-danger); color: var(--text-danger); }
+  .pill-blue { background: var(--bg-info); color: var(--text-info); }
+  .pill-gray { background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border); }
+
+  .btn-primary {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: opacity 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-primary:disabled { opacity: 0.35; cursor: default; }
+  .btn-sec {
+    background: transparent;
+    color: var(--text-primary);
+    border: 0.5px solid var(--border-med);
+    padding: 7px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background 0.15s;
+  }
+  .btn-sec:hover { background: var(--bg-secondary); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 12px 14px; }
+  .stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+  .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  .deal-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    border-radius: 4px;
+  }
+  .deal-row:last-child { border-bottom: none; }
+  .deal-row:hover { background: var(--bg-secondary); padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+
+  .score-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    min-width: 52px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .badge-high { background: var(--bg-success); color: var(--text-success); }
+  .badge-mid { background: var(--bg-warning); color: var(--text-warning); }
+  .badge-low { background: var(--bg-danger); color: var(--text-danger); }
+  .badge-commit { background: #e1f5ee; color: #085041; border: 0.5px solid #5DCAA5; }
+
+  .forecast-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+  }
+  .forecast-row:last-child { border-bottom: none; }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .slider-name { font-size: 12px; flex: 0 0 200px; color: var(--text-secondary); }
+  .slider-score { font-size: 13px; font-weight: 500; min-width: 28px; text-align: right; }
+  .slider-max { font-size: 11px; color: var(--text-secondary); min-width: 30px; }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border-med);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    cursor: pointer;
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 0 0 1px var(--border-med);
+  }
+
+  .commit-check { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+  .commit-check:last-child { border-bottom: none; }
+  .check-icon { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; }
+  .check-pass { background: var(--bg-success); color: var(--text-success); }
+  .check-fail { background: var(--bg-danger); color: var(--text-danger); }
+
+  .vel-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
+  .vel-label { font-size: 12px; color: var(--text-secondary); width: 150px; flex-shrink: 0; }
+  .vel-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .vel-fill { height: 100%; border-radius: 3px; }
+  .vel-val { font-size: 12px; font-weight: 500; width: 32px; text-align: right; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-row { margin-bottom: 10px; }
+  label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+  select, input[type=text], input[type=number] {
+    border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-md);
+    padding: 7px 10px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    width: 100%;
+    font-family: var(--font);
+  }
+  select:focus, input[type=text]:focus, input[type=number]:focus { outline: 2px solid #1D9E75; outline-offset: -1px; }
+  textarea {
+    width: 100%;
+    border: 0.5px solid var(--border-med);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-family: var(--font);
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    resize: vertical;
+  }
+  textarea:focus { outline: 2px solid #1D9E75; outline-offset: -1px; }
+
+  .score-ring {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    border: 3px solid;
+    font-size: 26px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .ai-result {
+    background: var(--bg-secondary);
+    padding: 14px 16px;
+    border-left: 3px solid #1D9E75;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+  }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--border-med);
+    border-top-color: var(--text-secondary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .notice {
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .notice-info { background: var(--bg-info); color: var(--text-info); }
+  .notice-warn { background: var(--bg-warning); color: var(--text-warning); }
+  .notice-ok { background: var(--bg-success); color: var(--text-success); }
+
+  .preview-wrap { overflow-x: auto; border: 0.5px solid var(--border); border-radius: var(--radius-md); margin-top: 12px; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .preview-table th { background: var(--bg-secondary); padding: 6px 10px; text-align: left; border-bottom: 0.5px solid var(--border); font-weight: 500; font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  .preview-table td { padding: 6px 10px; border-bottom: 0.5px solid var(--border); white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 640px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .forecast-row { grid-template-columns: 1fr 1fr; }
+    .slider-name { flex: 0 0 120px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Deal forecasting intelligence</div>
+    <div class="topbar-sub">Evidence-based scoring — not stage = probability</div>
+  </div>
+  <div class="topbar-dot"></div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('upload',this)">Upload</button>
+    <button class="tab" onclick="switchTab('pipeline',this)">Pipeline</button>
+    <button class="tab" onclick="switchTab('scorecard',this)">Scorecard</button>
+    <button class="tab" onclick="switchTab('forecast',this)">Forecast</button>
+    <button class="tab" onclick="switchTab('analyze',this)">AI analyze</button>
+  </div>
+
+  <!-- UPLOAD TAB -->
+  <div id="tab-upload" class="section active">
+
+    <div class="card" id="upload-card">
+      <div class="card-title">Upload your CRM export</div>
+      <label for="file-input" class="upload-zone" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)" style="cursor:pointer;display:block;">
+        <input type="file" id="file-input" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleFile(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 15v4a2 2 0 002 2h14a2 2 0 002-2v-4M8 10l4-4 4 4M12 6v9"/>
+        </svg>
+        <div class="upload-label">Drop a CSV or Excel file here or click to browse</div>
+        <div class="upload-sub">Supports .csv, .xls, .xlsx — any export from PowerBI, Salesforce, HubSpot, or other CRM</div>
+      </label>
+      <div id="file-status" style="font-size:12px;margin-top:8px;color:var(--text-secondary);"></div>
+    </div>
+
+    <div class="card hidden" id="mapping-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="card-title" style="margin-bottom:0;">Column mapping</div>
+        <div id="mapping-save-status" style="display:flex;align-items:center;gap:8px;"></div>
+      </div>
+      <div class="notice notice-info" id="mapping-notice"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="mapping-grid"></div>
+
+      <div style="margin-top:16px;border-top:0.5px solid var(--border);padding-top:14px;">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Preview — first 5 rows of mapped data</div>
+        <div class="preview-wrap">
+          <table class="preview-table" id="preview-table"></table>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" id="import-btn" onclick="importDeals()">Import deals</button>
+        <span id="import-status" style="font-size:12px;color:var(--text-success);"></span>
+      </div>
+
+      <div id="enrich-panel" class="hidden" style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);">
+        <div style="font-size:12px;font-weight:500;margin-bottom:6px;">AI next step enrichment</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;line-height:1.6;">Summarise next step notes and generate recommended actions for each deal using the secure OpenAI API route.</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn-sec" id="enrich-btn" onclick="enrichDeals()" style="font-size:12px;">Enrich next steps with AI</button>
+          <span id="enrich-status" style="font-size:12px;color:var(--text-secondary);"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Or enter a deal manually</div>
+      <div class="two-col">
+        <div class="form-row"><label>Deal name</label><input type="text" id="m-name" placeholder="Acme Corp — Enterprise"></div>
+        <div class="form-row"><label>Amount ($)</label><input type="number" id="m-amount" placeholder="150000"></div>
+        <div class="form-row"><label>Current stage</label>
+          <select id="m-stage">
+            <option value="1">1 — Prospecting</option>
+            <option value="2">2 — Discovery</option>
+            <option value="3" selected>3 — Solution</option>
+            <option value="4">4 — Proposal</option>
+            <option value="5">5 — Negotiation</option>
+            <option value="6">6 — Verbal commit</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Days in current stage</label><input type="number" id="m-days" placeholder="12"></div>
+        <div class="form-row"><label>Close date (YYYY-MM-DD)</label><input type="text" id="m-close" placeholder="2025-06-30"></div>
+        <div class="form-row"><label>Days since last activity</label><input type="number" id="m-activity" placeholder="4"></div>
+        <div class="form-row"><label>Next step notes (opt)</label><input type="text" id="m-nextstep" placeholder="Demo with CFO scheduled Thu 2pm"></div>
+        <div class="form-row"><label>Rep forecast category</label>
+          <select id="m-forecast">
+            <option value="omit">Omit</option>
+            <option value="bestcase">Best case</option>
+            <option value="commit">Commit</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="addManualDeal()">Add deal</button>
+        <button class="btn-sec" onclick="loadSampleDeals()">Load sample pipeline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE TAB -->
+  <div id="tab-pipeline" class="section">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Total pipeline</div><div class="stat-value" id="st-total">$0</div><div class="stat-sub">all deals</div></div>
+      <div class="stat-card"><div class="stat-label">Weighted forecast</div><div class="stat-value" id="st-weighted">$0</div><div class="stat-sub">evidence-based</div></div>
+      <div class="stat-card"><div class="stat-label">Commit-qualified</div><div class="stat-value" id="st-commit">0</div><div class="stat-sub">of <span id="st-total-n">0</span> deals</div></div>
+      <div class="stat-card"><div class="stat-label">At-risk deals</div><div class="stat-value" id="st-risk">0</div><div class="stat-sub">need attention</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">All deals — click any row to open scorecard</div>
+      <div id="deals-list"><div style="color:var(--text-secondary);font-size:13px;padding:14px 0;">No deals loaded. Use the Upload tab to get started or load the sample pipeline.</div></div>
+    </div>
+  </div>
+
+  <!-- SCORECARD TAB -->
+  <div id="tab-scorecard" class="section">
+
+    <div class="card" id="pipeline-agg-card" style="margin-bottom:14px;">
+      <div class="card-title">Pipeline aggregate</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        <div class="stat-card"><div class="stat-label">Deals scored</div><div class="stat-value" id="agg-deals">0</div><div class="stat-sub">of <span id="agg-total-deals">0</span> total</div></div>
+        <div class="stat-card"><div class="stat-label">Avg evidence score</div><div class="stat-value" id="agg-avg-score">—</div><div class="stat-sub">out of 100</div></div>
+        <div class="stat-card"><div class="stat-label">Avg adj. probability</div><div class="stat-value" id="agg-avg-prob">—</div><div class="stat-sub">evidence-weighted</div></div>
+        <div class="stat-card"><div class="stat-label">Commit qualified</div><div class="stat-value" id="agg-commits">0</div><div class="stat-sub">deals</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Avg score by dimension across all deals</div>
+      <div id="agg-dims" style="display:flex;flex-direction:column;gap:5px;"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+      <select id="deal-selector" onchange="selectDeal(this.value)" style="max-width:280px;">
+        <option value="">— select a deal —</option>
+      </select>
+      <span style="font-size:12px;color:var(--text-secondary);">or</span>
+      <button class="btn-sec" style="font-size:12px;" onclick="selectDeal('')">New blank scorecard</button>
+    </div>
+    <div class="two-col">
+      <div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <div class="score-ring" id="sc-ring" style="border-color:#1D9E75;color:#1D9E75;">—</div>
+          <div>
+            <div style="font-size:16px;font-weight:500;margin-bottom:3px;" id="sc-name">Select a deal</div>
+            <div style="font-size:13px;color:var(--text-secondary);" id="sc-class">—</div>
+            <div style="font-size:13px;margin-top:4px;">Adj. probability: <strong id="sc-prob">—</strong></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Evidence scorecard (0–100)</div>
+        <div id="sliders"></div>
+
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn-primary" onclick="saveScore()">Save score</button>
+          <button class="btn-sec" onclick="resetScore()">Reset</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title">Commit qualification (binary)</div>
+          <div id="commit-checks"><div style="font-size:13px;color:var(--text-secondary);">Select a deal to evaluate.</div></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:12px;">
+            Status: <span id="commit-status" style="font-weight:500;">—</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Velocity risk</div>
+          <div id="velocity"><div style="font-size:13px;color:var(--text-secondary);">Select a deal to see risk.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORECAST TAB -->
+  <div id="tab-forecast" class="section">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Stage-based (old)</div><div class="stat-value" id="f-stage">$0</div><div class="stat-sub">naive method</div></div>
+      <div class="stat-card"><div class="stat-label">Evidence-based</div><div class="stat-value" id="f-evid">$0</div><div class="stat-sub">scorecard-weighted</div></div>
+      <div class="stat-card"><div class="stat-label">Commit only</div><div class="stat-value" id="f-commit">$0</div><div class="stat-sub">fully qualified</div></div>
+      <div class="stat-card"><div class="stat-label">Forecast delta</div><div class="stat-value" id="f-delta">—</div><div class="stat-sub">vs stage method</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Deal-by-deal breakdown</div>
+      <div class="forecast-row" style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;padding-bottom:8px;border-bottom:0.5px solid var(--border-med);">
+        <span>Deal</span><span>Stage %</span><span>Evidence %</span><span>Amount</span><span>Category</span>
+      </div>
+      <div id="forecast-rows"><div style="color:var(--text-secondary);font-size:13px;padding:14px 0;">No deals loaded.</div></div>
+    </div>
+  </div>
+
+  <!-- AI ANALYZE TAB -->
+  <div id="tab-analyze" class="section">
+    <div class="card">
+      <div class="card-title">Paste call notes for AI analysis</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.6;">AI will extract evidence for each scorecard dimension and flag commit and risk signals from your notes.</div>
+
+      <div style="background:var(--bg-info);color:var(--text-info);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:14px;line-height:1.6;">
+        <strong>Production mode:</strong> This app calls a secure Vercel serverless route at <code style="background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;">/api/openai</code>. Your OpenAI key stays server-side as an environment variable and is never exposed in the browser.
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label>Link to deal (optional)</label>
+        <select id="ai-deal-sel" style="max-width:280px;"><option value="">Standalone — no deal</option></select>
+      </div>
+
+      <textarea id="ai-notes" rows="7" placeholder="e.g. Spoke with Sarah (VP Ops) and Mike (CFO). Sarah confirmed Q2 board deadline is real — budget tied to cost reduction initiative. Legal have been sent the MSA. Next call Thursday to finalise commercials..."></textarea>
+
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" id="ai-btn" onclick="runAI()">Analyze ↗</button>
+        <button class="btn-sec" onclick="testConnection()" style="font-size:12px;">Test connection</button>
+        <span id="ai-conn-status" style="font-size:12px;color:var(--text-secondary);"></span>
+      </div>
+    </div>
+
+    <div id="ai-out" class="hidden">
+      <div class="card" style="margin-top:0;">
+        <div id="ai-loading" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);">
+          <div class="spinner"></div>Analyzing notes...
+        </div>
+        <div class="ai-result hidden" id="ai-text"></div>
+        <div id="ai-suggestions" class="hidden" style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);">
+          <div style="font-size:13px;font-weight:500;margin-bottom:8px;">Suggested scorecard adjustments</div>
+          <div id="ai-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+          <button class="btn-sec" style="font-size:12px;" onclick="applyAI()">Apply to scorecard ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DIMS = [
+  { key:'champion',    label:'Champion strength',              max:20 },
+  { key:'economic',    label:'Economic buyer engaged',         max:15 },
+  { key:'business',    label:'Business problem tied to value', max:15 },
+  { key:'timeline',    label:'Customer-verified timeline',     max:15 },
+  { key:'nextstep',    label:'Next step scheduled',            max:10 },
+  { key:'multithread', label:'Multi-threading',                max:10 },
+  { key:'procurement', label:'Procurement / legal engaged',    max:15 },
+];
+
+const STAGE_P = {1:5,2:20,3:50,4:65,5:80,6:90};
+
+const REQUIRED_FIELDS = [
+  { key:'name',          label:'Deal name',           desc:'Account or opportunity name',      aliases:['name','deal','opportunity','account','opp'] },
+  { key:'amount',        label:'Amount ($)',           desc:'Deal value in dollars',            aliases:['amount','value','arr','acv','revenue','deal value','contract value'] },
+  { key:'stage',         label:'Stage (1–6)',          desc:'Numeric pipeline stage',           aliases:['stage','pipeline stage','deal stage','opp stage'] },
+  { key:'closeDate',     label:'Close date',           desc:'Expected close date',              aliases:['close','close date','closedate','expected close','target close'] },
+  { key:'daysInStage',   label:'Days in stage',        desc:'Days in current stage',            aliases:['days in stage','daysin','days_in_stage','stage days','time in stage'] },
+  { key:'lastActivity',  label:'Days since activity',  desc:'Days since last customer touch',   aliases:['last activity','days since','activity','last touch','last contact'] },
+  { key:'nextStepNotes', label:'Next step notes (opt)',desc:'Text description of the next step',aliases:['next step','nextstep','next steps','next action','follow up','followup','action item'] },
+  { key:'repForecast',   label:'Rep forecast (opt)',   desc:'Commit / Best Case / Omit',        aliases:['rep forecast','forecast','category','commit'] },
+];
+
+let deals = [];
+let scores = {};
+let csvHeaders = [];
+let csvRows = [];
+let colMap = {};
+let aiSugg = {};
+let currentDeal = null;
+
+function switchTab(t, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (t === 'pipeline') renderPipeline();
+  if (t === 'forecast') renderForecast();
+  if (t === 'scorecard') { refreshSelectors(); renderPipelineAggregate(); }
+}
+
+function fmtMoney(n) {
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+  return '$' + Math.round(n);
+}
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function onDragLeave() { document.getElementById('drop-zone').classList.remove('drag'); }
+function onDrop(e) { e.preventDefault(); onDragLeave(); const f = e.dataTransfer.files[0]; if (f) processFile(f); }
+function handleFile(e) { const f = e.target.files[0]; if (f) processFile(f); }
+
+function processFile(file) {
+  const name = file.name.toLowerCase();
+  const isExcel = name.endsWith('.xls') || name.endsWith('.xlsx');
+  const isCSV = name.endsWith('.csv');
+  if (!isExcel && !isCSV) { alert('Please upload a CSV (.csv) or Excel (.xls, .xlsx) file.'); return; }
+  document.getElementById('file-status').textContent = 'Reading ' + file.name + '...';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let headers, rows;
+      if (isExcel) {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        if (data.length < 2) { alert('Spreadsheet needs at least a header row and one data row.'); return; }
+        headers = data[0].map(h => String(h).trim());
+        rows = data.slice(1).map(r => headers.map((_, i) => String(r[i] ?? '').trim()));
+      } else {
+        const text = e.target.result;
+        const lines = text.trim().split('\n').filter(l => l.trim());
+        if (lines.length < 2) { alert('CSV needs at least a header row and one data row.'); return; }
+        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        rows = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      }
+      csvHeaders = headers;
+      csvRows = rows;
+      document.getElementById('file-status').textContent = '✓ ' + file.name + ' — ' + csvRows.length + ' rows, ' + csvHeaders.length + ' columns detected';
+
+      // Start with auto-match, then overlay any saved mapping where headers still exist
+      colMap = {};
+      REQUIRED_FIELDS.forEach(f => { colMap[f.key] = autoMatch(f.aliases); });
+      const saved = loadSavedMapping();
+      if (saved) {
+        REQUIRED_FIELDS.forEach(f => {
+          if (saved[f.key] && csvHeaders.includes(saved[f.key])) {
+            colMap[f.key] = saved[f.key];
+          }
+        });
+      }
+
+      document.getElementById('mapping-card').classList.remove('hidden');
+      rebuildMappingGrid();
+      refreshPreview();
+    } catch (err) {
+      alert('Could not read file: ' + err.message);
+      document.getElementById('file-status').textContent = '';
+    }
+  };
+  if (isExcel) reader.readAsArrayBuffer(file);
+  else reader.readAsText(file);
+}
+
+const MAPPING_STORAGE_KEY = 'deal_forecast_col_map';
+
+function loadSavedMapping() {
+  try { return JSON.parse(localStorage.getItem(MAPPING_STORAGE_KEY)) || null; } catch { return null; }
+}
+
+function saveMapping() {
+  try { localStorage.setItem(MAPPING_STORAGE_KEY, JSON.stringify(colMap)); } catch {}
+}
+
+function clearSavedMapping() {
+  try { localStorage.removeItem(MAPPING_STORAGE_KEY); } catch {}
+  showMappingSavedStatus(false);
+}
+
+function showMappingSavedStatus(saved) {
+  const el = document.getElementById('mapping-save-status');
+  if (!el) return;
+  if (saved) {
+    el.innerHTML = `<span style="color:var(--text-success);font-size:12px;display:flex;align-items:center;gap:5px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#1D9E75;display:inline-block;"></span>
+      Mapping saved
+    </span>
+    <button onclick="clearSavedMapping()" class="btn-sec" style="font-size:11px;padding:3px 9px;">Clear saved</button>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--text-secondary);font-size:12px;">Not saved</span>
+    <button onclick="lockMapping()" class="btn-sec" style="font-size:11px;padding:3px 9px;">Save mapping</button>`;
+  }
+}
+
+function lockMapping() {
+  saveMapping();
+  showMappingSavedStatus(true);
+}
+
+function autoMatch(aliases) {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  for (const alias of aliases) {
+    const idx = csvHeaders.findIndex(h => norm(h).includes(norm(alias)) || norm(alias).includes(norm(h)));
+    if (idx >= 0) return csvHeaders[idx];
+  }
+  return '';
+}
+
+function rebuildMappingGrid() {
+  const grid = document.getElementById('mapping-grid');
+  grid.innerHTML = REQUIRED_FIELDS.map(f => {
+    const matched = colMap[f.key];
+    const isOpt = f.key === 'nextStepNotes' || f.key === 'repForecast';
+    const opts = csvHeaders.map(h => `<option value="${h}" ${h === matched ? 'selected' : ''}>${h}</option>`).join('');
+    const statusDot = matched
+      ? `<span style="width:7px;height:7px;border-radius:50%;background:#1D9E75;display:inline-block;margin-right:4px;"></span>`
+      : `<span style="width:7px;height:7px;border-radius:50%;background:#EF9F27;display:inline-block;margin-right:4px;"></span>`;
+    return `<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:500;">${f.label}</span>
+        <span style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;">${statusDot}${matched ? 'matched' : isOpt ? 'optional' : 'unmatched'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">${f.desc}</div>
+      <select onchange="colMap['${f.key}']=this.value;rebuildMappingGrid();refreshPreview()" style="font-size:12px;padding:5px 8px;">
+        <option value="">— not mapped —</option>${opts}
+      </select>
+    </div>`;
+  }).join('');
+  updateMappingNotice();
+  // Reflect current saved state in the lock button
+  const saved = loadSavedMapping();
+  const isSynced = saved && REQUIRED_FIELDS.every(f => (saved[f.key] || '') === (colMap[f.key] || ''));
+  showMappingSavedStatus(isSynced);
+}
+
+function updateMappingNotice() {
+  const req = REQUIRED_FIELDS.filter(f => !['nextStepNotes', 'repForecast'].includes(f.key));
+  const unmapped = req.filter(f => !colMap[f.key]);
+  const notice = document.getElementById('mapping-notice');
+  if (unmapped.length === 0) {
+    notice.textContent = 'All required fields matched — review the preview below then import.';
+    notice.className = 'notice notice-ok';
+  } else {
+    notice.textContent = unmapped.length + ' required field(s) still need mapping: ' + unmapped.map(f => f.label).join(', ');
+    notice.className = 'notice notice-warn';
+  }
+}
+
+function refreshPreview() {
+  const tbl = document.getElementById('preview-table');
+  const mapped = REQUIRED_FIELDS.filter(f => colMap[f.key]);
+  const header = '<tr>' + mapped.map(f => `<th>${f.label}<div style="font-weight:400;color:var(--text-secondary);font-size:10px;margin-top:1px;">${colMap[f.key]}</div></th>`).join('') + '</tr>';
+  const rows = csvRows.slice(0, 5).map(r =>
+    '<tr>' + mapped.map(f => {
+      const ci = csvHeaders.indexOf(colMap[f.key]);
+      return `<td>${ci >= 0 ? (r[ci] || '—') : '—'}</td>`;
+    }).join('') + '</tr>'
+  ).join('');
+  tbl.innerHTML = '<thead>' + header + '</thead><tbody>' + rows + '</tbody>';
+}
+
+function importDeals() {
+  const req = REQUIRED_FIELDS.filter(f => !['nextStepNotes', 'repForecast'].includes(f.key));
+  const missing = req.filter(f => !colMap[f.key]);
+  if (missing.length > 0) { alert('Please map these required fields first:\n' + missing.map(f => '• ' + f.label).join('\n')); return; }
+  const ci = k => csvHeaders.indexOf(colMap[k]);
+  let imported = 0;
+  csvRows.forEach(r => {
+    const name = colMap.name ? r[ci('name')] : '';
+    if (!name) return;
+    deals.push({
+      name,
+      amount: parseFloat(colMap.amount ? r[ci('amount')] : 0) || 0,
+      stage: Math.min(6, Math.max(1, parseInt(colMap.stage ? r[ci('stage')] : 3) || 3)),
+      closeDate: colMap.closeDate ? r[ci('closeDate')] || '' : '',
+      daysInStage: parseInt(colMap.daysInStage ? r[ci('daysInStage')] : 0) || 0,
+      daysSinceActivity: parseInt(colMap.lastActivity ? r[ci('lastActivity')] : 0) || 0,
+      nextStepNotes: colMap.nextStepNotes ? r[ci('nextStepNotes')] || '' : '',
+      repForecast: colMap.repForecast ? r[ci('repForecast')] || '' : '',
+      aiSummary: null,
+    });
+    imported++;
+  });
+  document.getElementById('import-status').textContent = '✓ ' + imported + ' deals imported';
+  document.getElementById('import-btn').disabled = true;
+  document.getElementById('enrich-panel').classList.remove('hidden');
+  refreshSelectors();
+}
+
+function addManualDeal() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Enter a deal name.'); return; }
+  deals.push({
+    name,
+    amount: parseFloat(document.getElementById('m-amount').value) || 0,
+    stage: parseInt(document.getElementById('m-stage').value) || 3,
+    closeDate: document.getElementById('m-close').value || '',
+    daysInStage: parseInt(document.getElementById('m-days').value) || 0,
+    daysSinceActivity: parseInt(document.getElementById('m-activity').value) || 0,
+    nextStepNotes: document.getElementById('m-nextstep').value || '',
+    repForecast: document.getElementById('m-forecast').value,
+    aiSummary: null,
+  });
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-amount').value = '';
+  refreshSelectors();
+  alert('Deal added: ' + name + '. Switch to the Pipeline tab.');
+}
+
+function loadSampleDeals() {
+  deals = [
+    {name:'Acme Corp — Enterprise',amount:280000,stage:5,daysInStage:8,daysSinceActivity:3,closeDate:'2025-06-30',nextStepNotes:'Legal review of MSA — Sarah to confirm redlines by Friday',repForecast:'commit',aiSummary:null},
+    {name:'Globex — Mid-Market',amount:95000,stage:4,daysInStage:22,daysSinceActivity:14,closeDate:'2025-06-30',nextStepNotes:'',repForecast:'commit',aiSummary:null},
+    {name:'Initech Solutions',amount:175000,stage:3,daysInStage:11,daysSinceActivity:5,closeDate:'2025-07-31',nextStepNotes:'Technical deep-dive with IT team — Thu 3pm',repForecast:'bestcase',aiSummary:null},
+    {name:'Umbrella Ltd',amount:420000,stage:6,daysInStage:5,daysSinceActivity:2,closeDate:'2025-05-31',nextStepNotes:'PO submission confirmed — procurement to process by EOM',repForecast:'commit',aiSummary:null},
+    {name:'Rekall Ventures',amount:60000,stage:2,daysInStage:18,daysSinceActivity:11,closeDate:'2025-08-31',nextStepNotes:'',repForecast:'omit',aiSummary:null},
+  ];
+  scores[0]={champion:15,economic:12,business:13,timeline:14,nextstep:9,multithread:8,procurement:12};
+  scores[1]={champion:8,economic:5,business:10,timeline:6,nextstep:4,multithread:3,procurement:5};
+  scores[2]={champion:14,economic:7,business:12,timeline:7,nextstep:8,multithread:6,procurement:4};
+  scores[3]={champion:18,economic:14,business:14,timeline:14,nextstep:10,multithread:9,procurement:14};
+  scores[4]={champion:4,economic:2,business:5,timeline:3,nextstep:2,multithread:2,procurement:2};
+  refreshSelectors();
+  alert('Sample pipeline loaded. Switch to the Pipeline tab.');
+}
+
+function refreshSelectors() {
+  const opts = '<option value="">— select a deal —</option>' + deals.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+  document.getElementById('deal-selector').innerHTML = opts;
+  document.getElementById('ai-deal-sel').innerHTML = '<option value="">Standalone — no deal</option>' + deals.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+  renderPipelineAggregate();
+}
+
+function renderPipelineAggregate() {
+  if (!deals.length) return;
+
+  const scored = deals.map((_, i) => getScore(i));
+  const n = deals.length;
+
+  // Avg total score
+  const avgScore = Math.round(deals.reduce((sum, _, i) => sum + totalScore(scored[i]), 0) / n);
+  // Avg adjusted probability
+  const avgProb = Math.round(deals.reduce((sum, _, i) => sum + adjProb(i), 0) / n);
+  // Commits
+  const commitCount = deals.filter((_, i) => isCommit(i)).length;
+
+  document.getElementById('agg-deals').textContent = n;
+  document.getElementById('agg-total-deals').textContent = n;
+  document.getElementById('agg-avg-score').textContent = avgScore;
+  document.getElementById('agg-avg-prob').textContent = avgProb + '%';
+  document.getElementById('agg-commits').textContent = commitCount;
+
+  // Per-dimension averages
+  const dimsEl = document.getElementById('agg-dims');
+  if (dimsEl) {
+    dimsEl.innerHTML = DIMS.map(dim => {
+      const avgVal = deals.reduce((sum, _, i) => sum + (scored[i][dim.key] || 0), 0) / n;
+      const pct = Math.round((avgVal / dim.max) * 100);
+      const col = pct >= 70 ? '#1D9E75' : pct >= 40 ? '#EF9F27' : '#D85A30';
+      return `<div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--text-secondary);flex:0 0 195px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dim.label}</span>
+        <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:11px;font-weight:500;color:${col};min-width:36px;text-align:right;">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+async function enrichDeals() {
+  const toEnrich = deals.filter(d => d.nextStepNotes && d.nextStepNotes.trim() && !d.aiSummary);
+  if (toEnrich.length === 0) {
+    document.getElementById('enrich-status').textContent = deals.some(d => d.aiSummary) ? 'All enriched already.' : 'No deals have next step notes to enrich.';
+    return;
+  }
+  const btn = document.getElementById('enrich-btn');
+  const status = document.getElementById('enrich-status');
+  btn.disabled = true;
+  status.textContent = 'Enriching 0 of ' + toEnrich.length + '...';
+  status.style.color = 'var(--text-secondary)';
+
+  let done = 0;
+  for (const deal of toEnrich) {
+    const prompt = `You are a sales execution coach. Analyse this next step note and respond ONLY with valid JSON — no markdown, no extra text:
+{
+  "summary": "One sentence (max 20 words) stating what the next step is",
+  "bullets": ["Key context or fact 1", "Key context or fact 2"],
+  "actions": ["Specific action 1 (owned, time-bound)", "Specific action 2", "Specific action 3"]
+}
+
+DEAL: ${deal.name} | Stage ${deal.stage} | Close: ${deal.closeDate || 'unknown'} | Days since activity: ${deal.daysSinceActivity}
+NEXT STEP NOTES: ${deal.nextStepNotes}`;
+
+    try {
+      const raw = await callOpenAI(prompt, { json: true, max_output_tokens: 500 });
+      deal.aiSummary = JSON.parse(raw.replace(/^```json|```$/g, '').trim());
+    } catch (e) {
+      deal.aiSummary = { summary: 'Could not summarise: ' + e.message, bullets: [], actions: [] };
+    }
+    done++;
+    status.textContent = 'Enriching ' + done + ' of ' + toEnrich.length + '...';
+  }
+
+  status.textContent = '✓ ' + done + ' deal' + (done !== 1 ? 's' : '') + ' enriched';
+  status.style.color = 'var(--text-success)';
+  btn.disabled = false;
+
+  if (currentDeal !== null) renderScorecard();
+}
+
+async function callOpenAI(prompt, opts = {}) {
+  const resp = await fetch('/api/openai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, json: !!opts.json, max_output_tokens: opts.max_output_tokens || 1200 })
+  });
+  let data;
+  try { data = await resp.json(); } catch { data = {}; }
+  if (!resp.ok) throw new Error(data.error || 'API error ' + resp.status);
+  return data.text || '';
+}
+
+// Event delegation for dynamically rendered summarise buttons
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.ns-summarise-btn');
+  if (btn) {
+    const idx = parseInt(btn.getAttribute('data-idx'));
+    summariseNextStep(idx);
+  }
+});
+
+async function testConnection() {
+  const status = document.getElementById('ai-conn-status');
+  status.textContent = 'Testing...'; status.style.color = 'var(--text-secondary)';
+  try {
+    await callOpenAI('Reply with only: ok', { max_output_tokens: 20 });
+    status.textContent = '✓ OpenAI connection working'; status.style.color = 'var(--text-success)';
+  } catch (e) {
+    status.textContent = '✗ ' + e.message; status.style.color = 'var(--text-danger)';
+  }
+}
+
+async function runAI() {
+  const notes = document.getElementById('ai-notes').value.trim();
+  if (!notes) { alert('Paste some call notes first.'); return; }
+
+  const di = document.getElementById('ai-deal-sel').value;
+  const ctx = di !== '' ? `Deal: ${deals[parseInt(di)].name}, Stage ${deals[parseInt(di)].stage}` : '';
+
+  const outEl  = document.getElementById('ai-out');
+  const loadEl = document.getElementById('ai-loading');
+  const textEl = document.getElementById('ai-text');
+  const suggEl = document.getElementById('ai-suggestions');
+  const btn    = document.getElementById('ai-btn');
+
+  outEl.classList.remove('hidden');
+  loadEl.style.display = 'flex';
+  textEl.classList.add('hidden');
+  textEl.textContent = '';
+  suggEl.classList.add('hidden');
+  btn.disabled = true;
+
+  const prompt = `You are a sales forecasting expert. Analyze these call notes and extract evidence for a deal scorecard.
+${ctx}
+
+CALL NOTES:
+${notes}
+
+Respond with:
+1. CHAMPION STRENGTH — who is the champion, what have they done?
+2. ECONOMIC BUYER — engaged? Evidence?
+3. BUSINESS PROBLEM — clear quantified problem tied to value?
+4. TIMELINE — customer-verified with a business event driving it?
+5. NEXT STEPS — confirmed, owned, dated?
+6. MULTI-THREADING — multiple stakeholders?
+7. PROCUREMENT / LEGAL — in the loop?
+8. RISK FLAGS — sandbagging, velocity issues, red flags
+9. COMMIT QUALIFICATION — do the binary criteria appear met?
+10. SCORECARD SCORES (use exactly this format on separate lines):
+champion/20: [0-20]
+economic/15: [0-15]
+business/15: [0-15]
+timeline/15: [0-15]
+nextstep/10: [0-10]
+multithread/10: [0-10]
+procurement/15: [0-15]
+
+Be concise and evidence-based. Quote specific phrases.`;
+
+  try {
+    const text = await callOpenAI(prompt, { max_output_tokens: 1800 }) || 'No response received.';
+    loadEl.style.display = 'none';
+    textEl.textContent = text;
+    textEl.classList.remove('hidden');
+
+    const sugg = {};
+    for (const m of text.matchAll(/(champion|economic|business|timeline|nextstep|multithread|procurement)\/\d+:\s*\[?(\d+)\]?/gi)) {
+      sugg[m[1].toLowerCase()] = parseInt(m[2]);
+    }
+    if (Object.keys(sugg).length > 0) {
+      aiSugg = { ...sugg, _di: di !== '' ? parseInt(di) : null };
+      suggEl.classList.remove('hidden');
+      document.getElementById('ai-pills').innerHTML = Object.entries(sugg).map(([k, v]) => {
+        const dim = DIMS.find(d => d.key === k);
+        return `<span class="pill pill-amber">${dim ? dim.label : k}: ${v}/${dim ? dim.max : '?'}</span>`;
+      }).join('');
+    }
+  } catch (e) {
+    loadEl.style.display = 'none';
+    textEl.textContent = '⚠ Error: ' + e.message + '\n\nTroubleshooting:\n• Confirm OPENAI_API_KEY is set in Vercel\n• Try the Test connection button\n• Check your OpenAI project has available billing/quota\n• Review Vercel Function logs for the API error';
+    textEl.classList.remove('hidden');
+  }
+
+  btn.disabled = false;
+}
+
+function getScore(i) {
+  if (scores[i]) return scores[i];
+  const d = deals[i], p = (STAGE_P[d.stage] || 50) / 100;
+  const s = {};
+  DIMS.forEach(dim => { s[dim.key] = Math.round(dim.max * p * (0.65 + Math.random() * 0.35)); });
+  return s;
+}
+
+function totalScore(s) { return DIMS.reduce((sum, d) => sum + (s[d.key] || 0), 0); }
+
+function velPenalty(d) {
+  let r = 0;
+  if (d.daysInStage > 14) r += 25;
+  if (d.daysSinceActivity > 10) r += 20;
+  return Math.min(r, 45);
+}
+
+function adjProb(i) { return Math.max(5, totalScore(getScore(i)) - velPenalty(deals[i])); }
+
+function commitChecks(d, s) {
+  return [
+    {label:'Customer confirmed date tied to a business event', sub: d.closeDate ? 'Close: ' + d.closeDate : 'No close date set', pass: !!d.closeDate},
+    {label:'Legal / procurement path understood', sub: s.procurement >= 10 ? 'Procurement score adequate' : 'Procurement score low', pass: s.procurement >= 10},
+    {label:'Documented next step before close date', sub: d.nextStepNotes ? d.nextStepNotes : 'No next step notes recorded', pass: !!(d.nextStepNotes && d.nextStepNotes.trim()) && s.nextstep >= 7},
+    {label:'Champion took action this week', sub: d.daysSinceActivity <= 7 ? `Last activity: ${d.daysSinceActivity}d ago` : `Last activity: ${d.daysSinceActivity}d ago — stale`, pass: d.daysSinceActivity <= 7},
+  ];
+}
+
+function isCommit(i) { return commitChecks(deals[i], getScore(i)).every(c => c.pass); }
+
+function renderPipeline() {
+  const total = deals.reduce((s, d) => s + d.amount, 0);
+  const weighted = deals.reduce((s, d, i) => s + d.amount * adjProb(i) / 100, 0);
+  const nc = deals.filter((_, i) => isCommit(i)).length;
+  const nr = deals.filter(d => d.daysInStage > 14 || d.daysSinceActivity > 10 || !d.nextStepNotes).length;
+  document.getElementById('st-total').textContent = fmtMoney(total);
+  document.getElementById('st-weighted').textContent = fmtMoney(weighted);
+  document.getElementById('st-commit').textContent = nc;
+  document.getElementById('st-total-n').textContent = deals.length;
+  document.getElementById('st-risk').textContent = nr;
+  const list = document.getElementById('deals-list');
+  if (!deals.length) { list.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;padding:14px 0;">No deals loaded.</div>'; return; }
+  list.innerHTML = deals.map((d, i) => {
+    const p = adjProb(i), commit = isCommit(i);
+    const bcls = commit ? 'badge-commit' : p >= 70 ? 'badge-high' : p >= 45 ? 'badge-mid' : 'badge-low';
+    const flags = [];
+    if (d.daysInStage > 14) flags.push('<span class="pill pill-red">' + d.daysInStage + 'd in stage</span>');
+    if (d.daysSinceActivity > 10) flags.push('<span class="pill pill-red">' + d.daysSinceActivity + 'd no activity</span>');
+    if (!d.nextStepNotes) flags.push('<span class="pill pill-amber">No next step</span>');
+    if (!flags.length) flags.push('<span class="pill pill-green">Clean</span>');
+    return `<div class="deal-row" onclick="openDeal(${i})">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;">${d.name}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Stage ${d.stage} · ${fmtMoney(d.amount)} · ${d.closeDate || 'No close date'}</div>
+        <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;">${flags.join('')}</div>
+      </div>
+      <span class="score-badge ${bcls}">${commit ? 'COMMIT' : p + '%'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderForecast() {
+  const sf = deals.reduce((s, d) => s + d.amount * (STAGE_P[d.stage] || 50) / 100, 0);
+  const ef = deals.reduce((s, d, i) => s + d.amount * adjProb(i) / 100, 0);
+  const cf = deals.reduce((s, d, i) => isCommit(i) ? s + d.amount : s, 0);
+  const delta = ef - sf;
+  document.getElementById('f-stage').textContent = fmtMoney(sf);
+  document.getElementById('f-evid').textContent = fmtMoney(ef);
+  document.getElementById('f-commit').textContent = fmtMoney(cf);
+  document.getElementById('f-delta').textContent = (delta >= 0 ? '+' : '') + fmtMoney(delta);
+  document.getElementById('f-delta').style.color = delta >= 0 ? 'var(--text-success)' : 'var(--text-danger)';
+  document.getElementById('forecast-rows').innerHTML = deals.map((d, i) => {
+    const sp = STAGE_P[d.stage] || 50, ep = adjProb(i), commit = isCommit(i);
+    const cat = commit ? '<span class="pill pill-green">Commit</span>' : ep >= 55 ? '<span class="pill pill-amber">Best case</span>' : '<span class="pill pill-gray">Omit</span>';
+    return `<div class="forecast-row">
+      <span style="font-weight:500;">${d.name}</span>
+      <span style="color:var(--text-secondary);">${sp}%</span>
+      <span style="font-weight:500;color:${ep > sp ? 'var(--text-success)' : ep < sp ? 'var(--text-danger)' : 'inherit'}">${ep}%</span>
+      <span>${fmtMoney(d.amount)}</span>
+      <span>${cat}</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--text-secondary);padding:14px 0;font-size:13px;">No deals loaded.</div>';
+}
+
+function selectDeal(val) {
+  currentDeal = val === '' ? null : parseInt(val);
+  renderScorecard();
+}
+
+function openDeal(i) {
+  currentDeal = i;
+  switchTab('scorecard', document.querySelectorAll('.tab')[2]);
+  document.getElementById('deal-selector').value = i;
+  renderScorecard();
+}
+
+function renderScorecard() {
+  const i = currentDeal;
+  const d = i !== null ? deals[i] : {name:'Blank scorecard',stage:3,daysInStage:0,daysSinceActivity:0,closeDate:'',nextStepNotes:''};
+  const s = i !== null ? getScore(i) : DIMS.reduce((o, dim) => { o[dim.key] = Math.round(dim.max * 0.5); return o; }, {});
+  document.getElementById('sc-name').textContent = d.name;
+  document.getElementById('sliders').innerHTML = DIMS.map(dim => `
+    <div class="slider-row">
+      <span class="slider-name">${dim.label}</span>
+      <input type="range" min="0" max="${dim.max}" value="${s[dim.key] || 0}" step="1" oninput="onSlider('${dim.key}',+this.value)">
+      <span class="slider-score" id="sv-${dim.key}">${s[dim.key] || 0}</span>
+      <span class="slider-max">/${dim.max}</span>
+    </div>`).join('');
+  updateScoreDisplay(s, d);
+  renderCommit(d, s);
+  renderVelocity(d);
+}
+
+function onSlider(key, val) {
+  document.getElementById('sv-' + key).textContent = val;
+  if (currentDeal !== null) { if (!scores[currentDeal]) scores[currentDeal] = getScore(currentDeal); scores[currentDeal][key] = val; }
+  const s = collectSliders();
+  const d = currentDeal !== null ? deals[currentDeal] : {daysInStage:0,daysSinceActivity:0,closeDate:'',nextStepNotes:''};
+  updateScoreDisplay(s, d);
+  renderCommit(d, s);
+}
+
+function collectSliders() {
+  const s = {};
+  DIMS.forEach(dim => { const el = document.getElementById('sv-' + dim.key); if (el) s[dim.key] = parseInt(el.textContent) || 0; });
+  return s;
+}
+
+function updateScoreDisplay(s, d) {
+  const t = totalScore(s);
+  const vp = velPenalty(d);
+  const adj = Math.max(5, t - vp);
+  const color = t >= 70 ? '#1D9E75' : t >= 45 ? '#BA7517' : '#D85A30';
+  const ring = document.getElementById('sc-ring');
+  ring.style.borderColor = color; ring.style.color = color; ring.textContent = t;
+  document.getElementById('sc-prob').textContent = adj + '%';
+  const commit = currentDeal !== null ? commitChecks(d, s).every(c => c.pass) : false;
+  document.getElementById('sc-class').textContent = commit ? 'Commit' : adj >= 55 ? 'Best case' : 'Omit / upside';
+}
+
+function renderCommit(d, s) {
+  const checks = commitChecks(d, s);
+  const dealIdx = currentDeal !== null ? currentDeal : -1;
+
+  document.getElementById('commit-checks').innerHTML = checks.map((c, i) => {
+    // Special treatment for the "Documented next step" row (index 2)
+    if (i === 2) {
+      const hasNotes = !!(d.nextStepNotes && d.nextStepNotes.trim());
+      const hasSummary = !!(d.aiSummary);
+
+      let nsContent = '';
+      if (hasSummary) {
+        const bulletsHTML = d.aiSummary.bullets && d.aiSummary.bullets.length
+          ? d.aiSummary.bullets.map(b => `<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:3px;">
+              <span style="width:4px;height:4px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;margin-top:5px;"></span>
+              <span style="font-size:11px;color:var(--text-secondary);line-height:1.5;">${b}</span>
+            </div>`).join('') : '';
+        const actionsHTML = d.aiSummary.actions && d.aiSummary.actions.length
+          ? d.aiSummary.actions.map(a => `<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:3px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:#1D9E75;flex-shrink:0;margin-top:5px;"></span>
+              <span style="font-size:11px;line-height:1.5;">${a}</span>
+            </div>`).join('') : '';
+        nsContent = `<div style="margin-top:6px;background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 10px;">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
+            <span style="background:var(--bg-success);color:var(--text-success);font-size:10px;padding:1px 6px;border-radius:10px;">AI summary</span>
+          </div>
+          <div style="font-size:12px;font-weight:500;line-height:1.5;margin-bottom:4px;">${d.aiSummary.summary}</div>
+          ${bulletsHTML}
+          ${actionsHTML ? `<div style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin:5px 0 3px;">Actions</div>${actionsHTML}` : ''}
+        </div>`;
+      } else if (hasNotes) {
+        nsContent = `<div style="margin-top:5px;font-size:11px;color:var(--text-secondary);line-height:1.5;">${d.nextStepNotes}</div>
+          <div style="margin-top:6px;" id="commit-ns-ai-area-${dealIdx}">
+            <button class="btn-sec ns-summarise-btn" data-idx="${dealIdx}" style="font-size:11px;padding:4px 10px;display:inline-flex;align-items:center;gap:4px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#1D9E75;display:inline-block;flex-shrink:0;"></span>
+              Summarise with AI
+            </button>
+          </div>`;
+      } else {
+        nsContent = `<div style="margin-top:2px;font-size:11px;color:var(--text-secondary);">No next step notes recorded</div>`;
+      }
+
+      return `<div class="commit-check">
+        <div class="check-icon ${c.pass ? 'check-pass' : 'check-fail'}">${c.pass ? '✓' : '✗'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;">${c.label}</div>
+          ${nsContent}
+        </div>
+      </div>`;
+    }
+
+    // All other rows
+    return `<div class="commit-check">
+      <div class="check-icon ${c.pass ? 'check-pass' : 'check-fail'}">${c.pass ? '✓' : '✗'}</div>
+      <div>
+        <div style="font-size:13px;">${c.label}</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${c.sub}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const all = checks.every(c => c.pass);
+  document.getElementById('commit-status').textContent = all ? 'Commit ✓' : 'Best case';
+  document.getElementById('commit-status').style.color = all ? 'var(--text-success)' : 'var(--text-warning)';
+}
+
+function renderVelocity(d) {
+  const items = [
+    {label:'Days in stage',       val:d.daysInStage,       max:30, warn:14, danger:21},
+    {label:'Days since activity', val:d.daysSinceActivity, max:20, warn:7,  danger:10},
+  ];
+  const bars = items.map(it => {
+    const pct = Math.min(100, (it.val / it.max) * 100);
+    const col = it.val >= it.danger ? '#D85A30' : it.val >= it.warn ? '#EF9F27' : '#1D9E75';
+    return `<div class="vel-bar">
+      <span class="vel-label">${it.label}</span>
+      <div class="vel-track"><div class="vel-fill" style="width:${pct}%;background:${col};"></div></div>
+      <span class="vel-val">${it.val}</span>
+    </div>`;
+  }).join('');
+
+  let nsBlock = '';
+  if (d.aiSummary) {
+    const bulletsHTML = d.aiSummary.bullets && d.aiSummary.bullets.length
+      ? d.aiSummary.bullets.map(b => `<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:3px;">
+          <span style="width:5px;height:5px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;margin-top:6px;"></span>
+          <span style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${b}</span>
+        </div>`).join('')
+      : '';
+    const actions = d.aiSummary.actions && d.aiSummary.actions.length
+      ? `<div style="margin-top:8px;">
+          <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Actions</div>
+          ${d.aiSummary.actions.map(a => `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#1D9E75;flex-shrink:0;margin-top:5px;"></span>
+            <span style="font-size:13px;line-height:1.5;">${a}</span>
+          </div>`).join('')}
+        </div>`
+      : '';
+    nsBlock = `<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Next step <span style="background:var(--bg-success);color:var(--text-success);padding:1px 6px;border-radius:10px;font-size:10px;margin-left:4px;">AI enriched</span></div>
+      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;">
+        <div style="font-size:13px;font-weight:500;line-height:1.5;margin-bottom:4px;">${d.aiSummary.summary}</div>
+        ${bulletsHTML}
+        ${d.nextStepNotes ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:5px;padding-top:5px;border-top:0.5px solid var(--border);">Original: ${d.nextStepNotes}</div>` : ''}
+        ${actions}
+      </div>
+    </div>`;
+  } else if (d.nextStepNotes) {
+    const dealIdx = currentDeal !== null ? currentDeal : -1;
+    nsBlock = `<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Next step</div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:8px;">${d.nextStepNotes}</div>
+      <div id="ns-ai-area-${dealIdx}">
+        <button class="btn-sec ns-summarise-btn" data-idx="${dealIdx}" style="font-size:12px;padding:5px 11px;display:inline-flex;align-items:center;gap:5px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#1D9E75;display:inline-block;flex-shrink:0;"></span>
+          Summarise with AI
+        </button>
+      </div>
+    </div>`;
+  } else {
+    nsBlock = `<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:13px;color:var(--text-warning);">No next step recorded</div>`;
+  }
+
+  document.getElementById('velocity').innerHTML = bars + nsBlock;
+}
+
+async function summariseNextStep(dealIdx) {
+  if (dealIdx < 0 || !deals[dealIdx]) return;
+  const deal = deals[dealIdx];
+  const area = document.getElementById('ns-ai-area-' + dealIdx);
+  if (!area) return;
+  area.innerHTML = `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);padding:4px 0;"><div class="spinner"></div>Summarising...</div>`;
+
+  const prompt = `You are a sales execution coach. Analyse this next step note for a deal and respond ONLY with valid JSON — no markdown, no explanation:
+{
+  "summary": "One clear sentence (max 20 words) stating the next step",
+  "bullets": ["Key fact or context 1", "Key fact or context 2"],
+  "actions": ["Specific action 1 (owned, time-bound)", "Specific action 2", "Specific action 3"]
+}
+
+DEAL: ${deal.name} | Stage ${deal.stage} | Close: ${deal.closeDate || 'unknown'} | Days since activity: ${deal.daysSinceActivity}
+NEXT STEP NOTES: ${deal.nextStepNotes}`;
+
+  try {
+    const raw = await callOpenAI(prompt, { json: true, max_output_tokens: 500 });
+    const parsed = JSON.parse(raw.replace(/^```json|```$/g, '').trim());
+    deal.aiSummary = parsed;
+
+    // Re-render both the commit qualification panel and velocity card
+    if (currentDeal !== null && deals[currentDeal] === deal) {
+      const s = collectSliders();
+      renderCommit(deal, s);
+      renderVelocity(deal);
+      return; // renderCommit rebuilds the area, no need to update area directly
+    }
+
+    const bulletsHTML = parsed.bullets && parsed.bullets.length
+      ? parsed.bullets.map(b => `<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:3px;">
+          <span style="width:5px;height:5px;border-radius:50%;background:var(--text-secondary);flex-shrink:0;margin-top:6px;"></span>
+          <span style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${b}</span>
+        </div>`).join('')
+      : '';
+    const actionsHTML = parsed.actions && parsed.actions.length
+      ? `<div style="margin-top:8px;"><div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Actions</div>` +
+        parsed.actions.map(a => `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#1D9E75;flex-shrink:0;margin-top:5px;"></span>
+          <span style="font-size:13px;line-height:1.5;">${a}</span>
+        </div>`).join('') + `</div>`
+      : '';
+
+    area.innerHTML = `
+      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="background:var(--bg-success);color:var(--text-success);font-size:10px;padding:1px 6px;border-radius:10px;">AI summary</span>
+        </div>
+        <div style="font-size:13px;font-weight:500;line-height:1.5;margin-bottom:4px;">${parsed.summary}</div>
+        ${bulletsHTML}
+        ${actionsHTML}
+      </div>`;
+  } catch (e) {
+    area.innerHTML = `<div style="font-size:12px;color:var(--text-danger);padding:4px 0;">⚠ ${e.message}</div>
+      <button class="btn-sec ns-summarise-btn" data-idx="${dealIdx}" style="font-size:12px;padding:5px 11px;margin-top:6px;">Retry</button>`;
+  }
+}
+
+function saveScore() {
+  if (currentDeal === null) { alert('Select a deal first.'); return; }
+  scores[currentDeal] = collectSliders();
+  alert('Score saved for: ' + deals[currentDeal].name);
+}
+
+function resetScore() {
+  if (currentDeal !== null) delete scores[currentDeal];
+  renderScorecard();
+}
+
+function applyAI() {
+  const di = aiSugg._di;
+  if (di !== null && di !== undefined) {
+    scores[di] = Object.fromEntries(Object.entries(aiSugg).filter(([k]) => k !== '_di'));
+    openDeal(di);
+  } else {
+    alert('Select a specific deal in the dropdown to apply these suggestions to its scorecard.');
+  }
+}
+
+renderScorecard();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</body>
+</html>
